@@ -106,8 +106,6 @@ while (!($MascaraSubred) -or !(ValidarIP -IPAddress $MascaraSubred)) {
 Write-Host "Creando el ámbito DHCP con nombre $($NombreDHCP)..."
 Add-DhcpServerv4Scope -Name $NombreDHCP -StartRange $RangoInicio -EndRange $RangoFin -SubnetMask $MascaraSubred
 
-# Add-DhcpServerInDC -DnsName WIN-0T317SI2QVH.prueba.com -IPAddress 192.168.100.100 (Ejemplo comentado)
-
 # Reiniciar el servicio DHCP
 Write-Host "Reiniciando el servicio DHCP..."
 Restart-Service -Name dhcpserver -Force
