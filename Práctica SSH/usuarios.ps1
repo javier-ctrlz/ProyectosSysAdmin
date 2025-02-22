@@ -1,23 +1,23 @@
-# Script para la creaciÃ³n de usuarios SSH
-# Zapien Rivera JesÃºs Javier
+# Script para la creación de usuarios SSH
+# Zapien Rivera Jesús Javier
 # 302 IS
 
 # usuarios.ps1
-# Funciones relacionadas con la gestiÃ³n de usuarios SSH
+# Funciones relacionadas con la gestión de usuarios SSH
 
-# FunciÃ³n para Validar nombres de usuario
+# Función para Validar nombres de usuario
 function ValidarNombreUsuario {
     param(
         [string]$NombreUsuario
     )
     if ([string]::IsNullOrEmpty($NombreUsuario)) {
-        Write-Host "El nombre de usuario no puede estar vacÃ­o." -ForegroundColor Yellow
+        Write-Host "El nombre de usuario no puede estar vacío." -ForegroundColor Yellow
         return $false
     }
     return $true
 }
 
-# FunciÃ³n para Crear un nuevo usuario SSH y configurar permisos
+# Función para Crear un nuevo usuario SSH y configurar permisos
 function CrearUsuarioSSH {
     # Preguntar por el nombre de usuario
     $NombreUsuario = ""
@@ -25,40 +25,55 @@ function CrearUsuarioSSH {
         $NombreUsuario = Read-Host "Introduce el nombre de usuario para el nuevo usuario SSH"
     }
 
-    # Preguntar por la contraseÃ±a
-    $Password = Read-Host -Prompt "Introduce la contraseÃ±a para el usuario $($NombreUsuario)" -AsSecureString
+    # Advertencia sobre complejidad de contraseña
+    Write-Host ""
+    Write-Host "La contraseña debe cumplir los siguientes requisitos de complejidad del sistema:" -ForegroundColor Yellow
+    Write-Host "- No debe contener el nombre de usuario o partes del nombre completo del usuario" -ForegroundColor Yellow
+    Write-Host "  que excedan dos caracteres consecutivos." -ForegroundColor Yellow
+    Write-Host "- Debe tener una longitud mínima de 6 caracteres." -ForegroundColor Yellow
+    Write-Host "- Debe incluir caracteres de al menos tres de las siguientes categorías:" -ForegroundColor Yellow
+    Write-Host "  - Letras mayúsculas (A-Z)" -ForegroundColor Yellow
+    Write-Host "  - Letras minúsculas (a-z)" -ForegroundColor Yellow
+    Write-Host "  - Dígitos de base 10 (0-9)" -ForegroundColor Yellow
+    Write-Host "  - Caracteres no alfanuméricos (ej: !\$#%&'()*+,-./:;<=>?@[\\]^_`{|}~)" -ForegroundColor Yellow
+    Write-Host ""
+
+    # Preguntar por la contraseña
+    $Password = Read-Host -Prompt "Introduce la contraseña para el usuario $($NombreUsuario)" -AsSecureString
     if (!($Password)) {
-        Write-Host "La contraseÃ±a no puede estar vacÃ­a. CreaciÃ³n de usuario cancelada." -ForegroundColor Yellow
-        return # Salir si no hay contraseÃ±a
+        Write-Host "La contraseña no puede estar vacía. Creación de usuario cancelada." -ForegroundColor Yellow
+        return # Salir si no hay contraseña
     }
 
     # Preguntar si el usuario debe ser administrador
     $EsAdministrador = $false
-    $RespuestaAdmin = Read-Host "Â¿Dar permisos de administrador a este usuario? (sÃ­/no)"
-    if ($RespuestaAdmin -match "(?i)^(sÃ­|si|yes|y)$") {
+    $RespuestaAdmin = Read-Host "¿Dar permisos de administrador a este usuario? (sí/no)"
+    if ($RespuestaAdmin -match "(?i)^(sí|si|yes|y|s)$") {
         $EsAdministrador = $true
     }
 
     # Crear el usuario local
     Write-Host "Creando usuario $($NombreUsuario)..."
     try {
-        New-LocalUser -Name $NombreUsuario -Password $Password
+        New-LocalUser -Name $NombreUsuario -Password $Password 
     } catch {
         Write-Error "Error al crear el usuario $($NombreUsuario): $($_.Exception.Message)"
+        Write-Host "Error: No se pudo crear el usuario debido a la contraseña." -ForegroundColor Red
+        Write-Host "Asegúrate de que la contraseña cumple con los requisitos de complejidad de tu sistema." -ForegroundColor Red
         return # Salir en caso de error
     }
 
     # Configurar permisos si es administrador
     if ($EsAdministrador) {
         try {
-            Write-Host "AÃ±adiendo usuario $($NombreUsuario) al grupo Administradores..."
-            Add-LocalGroupMember -Group "Administrators" -Member $NombreUsuario
-            Write-Host "Usuario $($NombreUsuario) aÃ±adido al grupo Administradores" -ForegroundColor Green
+            Write-Host "Añadiendo usuario $($NombreUsuario) al grupo Administradores..."
+            Add-LocalGroupMember -Group "Administradores" -Member $NombreUsuario
+            Write-Host "Usuario $($NombreUsuario) añadido al grupo Administradores" -ForegroundColor Green
         } catch {
-            Write-Warning "No se pudo aÃ±adir el usuario $($NombreUsuario) al grupo Administradores"
+            Write-Warning "No se pudo añadir el usuario $($NombreUsuario) al grupo Administradores"
         }
     } else {
-        Write-Host "Usuario $($NombreUsuario) creado como usuario estÃ¡ndar." -ForegroundColor Green
+        Write-Host "Usuario $($NombreUsuario) creado como usuario estándar." -ForegroundColor Green
     }
 
     Write-Host "Usuario SSH $($NombreUsuario) creado exitosamente" -ForegroundColor Green
@@ -66,6 +81,6 @@ function CrearUsuarioSSH {
     if ($EsAdministrador) {
         Write-Host "Permisos: Administrador"
     } else {
-        Write-Host "Permisos: EstÃ¡ndar"
+        Write-Host "Permisos: Estándar"
     }
 }
