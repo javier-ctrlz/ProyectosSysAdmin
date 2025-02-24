@@ -13,7 +13,7 @@ apt-get upgrade -y
 echo "Instalando el servidor DHCP..."
 sudo apt-get install isc-dhcp-server -y
 
-source ./funciones.sh
+source ./funciones_dhcp.sh
 
 # Inicio de la configuración del DHCP
 

@@ -6,7 +6,7 @@
 # Write-Host "Instalando el rol de servidor DHCP..."
 # Install-WindowsFeature -Name DHCP -IncludeManagementTools
 
-. "$PSScriptRoot\funciones.ps1"
+. "$PSScriptRoot\funciones_dhcp.ps1"
 
 # Inicio de la configuración del DHCP
 

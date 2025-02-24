@@ -6,7 +6,7 @@
 #Write-Host "Instalando el rol de servidor DNS..."
 #Install-WindowsFeature -Name DNS -IncludeManagementTools
 
-. "$PSScriptRoot\funciones.ps1"
+. "$PSScriptRoot\funciones_dns.ps1"
 
 # Preguntar al usuario por el dominio
 while (!$DomainName) {

@@ -10,7 +10,7 @@ apt-get upgrade -y
 #echo "Instalando bind9..."
 #apt-get install bind9 bind9utils
 
-source ./funciones.sh
+source ./funciones_dns.sh
 
 #Configuracion Zona Directa
 dominio=""
