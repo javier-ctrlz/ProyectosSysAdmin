@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 #Script para instalar y configurar un servidor DNS usando BIND9
 #Zapien Rivera Jesus Javier
 
