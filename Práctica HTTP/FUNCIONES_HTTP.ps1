@@ -2,7 +2,6 @@
 # Zapien Rivera Jesús Javier
 # 302 IS
 
-
 # --- Funciones de Validación y Comprobación de Puertos ---
 
 function Validate-Port {
@@ -59,49 +58,45 @@ function Get-NginxVersions {
        $nginxLTSVersion = "desconocido"
     }
     Write-Host "NGINX - Opciones de Versión:"
-    Write-Host "1. Desarrollo (Mainline): $nginxDevVersion"
-    Write-Host "2. LTS (Estable): $nginxLTSVersion"
+    Write-Host "1. Desarrollo: $nginxDevVersion"
+    Write-Host "2. LTS: $nginxLTSVersion"
     Write-Host "3. Cancelar"
     return @{ dev = $nginxDevVersion; lts = $nginxLTSVersion }
 }
 
 function Get-TomcatVersions {
-    Write-Host "Consultando página de descargas de Tomcat (Desarrollo)..."
     try {
-        $responseDev = Invoke-WebRequest -Uri "https://tomcat.apache.org/download-11.cgi" -UseBasicParsing
+        $response = Invoke-WebRequest -Uri "https://tomcat.apache.org/index.html" -UseBasicParsing
     }
     catch {
-        Write-Warning "No se pudo acceder a la página de Tomcat 11."
-        $tomcatDevVersion = "desconocido"
-    }
-    Write-Host "Consultando página de descargas de Tomcat (Estable)..."
-    try {
-        $responseLTS = Invoke-WebRequest -Uri "https://tomcat.apache.org/download-10.cgi" -UseBasicParsing
-    }
-    catch {
-        Write-Warning "No se pudo acceder a la página de Tomcat 10."
-        $tomcatLTSVersion = "desconocido"
+        Write-Warning "No se pudo acceder a la página de Tomcat."
+        return @{ dev = "desconocido"; lts = "desconocido" }
     }
     
-    $contentDev = $responseDev.Content
-    $contentLTS = $responseLTS.Content
-    $regex = 'apache-tomcat-([\d\.]+)\.tar\.gz'
-    $matchDev = [regex]::Match($contentDev, $regex)
-    $matchLTS = [regex]::Match($contentLTS, $regex)
-    if($matchDev.Success -and $matchLTS.Success) {
-       $tomcatDevVersion = $matchDev.Groups[1].Value
-       $tomcatLTSVersion = $matchLTS.Groups[1].Value
-    } else {
-       Write-Warning "No se pudieron obtener las versiones de Tomcat de las páginas de descargas."
-       $tomcatDevVersion = "desconocido"
-       $tomcatLTSVersion = "desconocido"
+    $content = $response.Content
+    $regex = '(?<=<h3 id="Tomcat_)\d+\.\d+\.\d+'
+    $matches = [regex]::Matches($content, $regex)
+    
+    if ($matches.Count -ge 2) {
+        # La primera coincidencia es la versión LTS (estable)
+        $tomcatLTSVersion = $matches[0].Value
+        # La última coincidencia es la versión de desarrollo
+        $tomcatDevVersion = $matches[$matches.Count - 1].Value
     }
+    else {
+        Write-Warning "No se pudieron obtener las versiones de Tomcat de la página."
+        $tomcatLTSVersion = "desconocido"
+        $tomcatDevVersion = "desconocido"
+    }
+    
     Write-Host "Tomcat - Opciones de Versión:"
     Write-Host "1. Desarrollo: Tomcat $tomcatDevVersion"
     Write-Host "2. LTS (Estable): Tomcat $tomcatLTSVersion"
     Write-Host "3. Cancelar"
+    
     return @{ dev = $tomcatDevVersion; lts = $tomcatLTSVersion }
 }
+
 
 function Get-IISVersions {
     # Para IIS usaremos versiones predefinidas
@@ -174,25 +169,25 @@ function Install-Nginx {
 function Install-Tomcat {
     param(
         [string]$Port,
-        [string]$VersionOption,  # "1" para Desarrollo, "2" para LTS
+        [string]$VersionOption,
         [hashtable]$Versions
     )
 
     if ($VersionOption -eq "1") {
         $selectedVersion = $Versions.dev
         $versionType = "Desarrollo"
-        $bercion = 11
     }
     elseif ($VersionOption -eq "2") {
         $selectedVersion = $Versions.lts
         $versionType = "LTS (Estable)"
-        $bercion = 10
     }
     else {
         Write-Warning "Opción de versión no válida para Tomcat."
         return
     }
 
+    $bercion = $selectedVersion.Split('.')[0]
+    
     $downloadLink = "https://dlcdn.apache.org/tomcat/tomcat-$bercion/v$selectedVersion/bin/apache-tomcat-$selectedVersion-windows-x64.zip"
     $tomcatZip = "C:\tomcat-$selectedVersion.zip"
     $tomcatPath = "C:\tomcat"
