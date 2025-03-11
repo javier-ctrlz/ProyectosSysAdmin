@@ -83,21 +83,19 @@ obtener_versiones_nginx() {
 }
 
 obtener_versiones_tomcat() {
-    local url_lts="https://tomcat.apache.org/download-10.cgi"
-    local url_dev="https://tomcat.apache.org/download-11.cgi"
-    local html_lts=$(curl -s "$url_lts")
-    local html_dev=$(curl -s "$url_dev")
+    local url="https://tomcat.apache.org/index.html"
+    local html=$(curl -s "$url")
 
-    # Extraer versión LTS (Tomcat 10)
-    local version_lts=$(echo "$html_lts" | grep -oP '(?s)<h3 id="Tomcat_10_Software_Downloads">.*?Tomcat\s*10')
-    version_lts=$(echo "$version_lts" | grep -oP 'Tomcat\s*(\d+)')
-    version_lts=$(echo "$version_lts" | grep -oP '\d+')
+    # Extraer todas las versiones disponibles
+    local versiones=($(echo "$html" | grep -oP '(?<=<h3 id="Tomcat_)\d+\.\d+\.\d+'))
 
-    # Extraer versión de desarrollo (Tomcat 11)
-    local version_dev=$(echo "$html_dev" | grep -oP '(?s)<h3 id="Tomcat_11_Software_Downloads">.*?Tomcat\s*11')
-    version_dev=$(echo "$version_dev" | grep -oP 'Tomcat\s*(\d+)')
-    version_dev=$(echo "$version_dev" | grep -oP '\d+')
-
+    if [[ ${#versiones[@]} -ge 2 ]]; then
+        local version_lts="${versiones[0]}"   # La primera coincidencia es la LTS
+        local version_dev="${versiones[-1]}"  # La última coincidencia es la de desarrollo
+    else
+        echo "No se pudieron obtener las versiones de Tomcat."
+        return
+    fi
 
     echo "TOMCAT version:"
     echo "1.- ${version_dev}"
@@ -105,6 +103,7 @@ obtener_versiones_tomcat() {
     echo ""
     echo "3.- Cancelar"
 }
+
 
 obtener_versiones_ols() {
     local url="https://openlitespeed.org/downloads/"
@@ -228,48 +227,58 @@ EOF' &>/dev/null
 }
 
 instalar_tomcat() {
-    local opcion_version="$1" # Recibe opcion de version (1 o 2)
-    local puerto="$2"        # Y puerto
+    local opcion_version="$1" # Recibe opción de versión (1 o 2)
+    local puerto="$2"         # Recibe el puerto
     local version_tomcat=""
     local url_tomcat=""
-    local version_dev="" # Declarar version_dev localmente
-    local version_lts="" # Declarar version_lts localmente
+    
+    # Obtener versiones desde la página principal de Tomcat
+    local html=$(curl -s "https://tomcat.apache.org/index.html")
+    local versiones=($(echo "$html" | grep -oP '(?<=<h3 id="Tomcat_)\d+\.\d+\.\d+'))
 
-    # Obtener versiones ACTUALES de Tomcat
-    version_dev=$(obtener_versiones_tomcat_dev) # Asignar valor a version_dev (Tomcat 11 - desarrollo)
-    version_lts=$(obtener_versiones_tomcat_lts) # Asignar valor a version_lts (Tomcat 10 - estable)
-
-
-    case "$opcion_version" in
-        1) version_tomcat="${version_dev}"; url_tomcat="https://tomcat.apache.org/download-$(obtener_versiones_tomcat_dev).cgi";; # Usar version_dev
-        2) version_tomcat="${version_lts}"; url_tomcat="https://tomcat.apache.org/download-$(obtener_versiones_tomcat_lts).cgi";; # Usar version_lts
-        *) echo "Opción de versión no válida para Tomcat (en función interna)."; return 1;; # Error interno, no deberia pasar
-    esac
-
-
-    echo ""
-    echo "=== Instalando TOMCAT ${version_tomcat} en puerto ${puerto} ==="
-    echo "Instalando Tomcat ${version_tomcat}..."
-
-    # Obtener enlace de descarga del binario .tar.gz - asumiendo core es suficiente
-    local enlace_descarga=$(curl -s "$url_tomcat" | grep -oP 'https:\/\/dlcdn\.apache\.org\/tomcat\/tomcat-\d+\/v[\d\.]+\/bin\/apache-tomcat-[\d\.]+\.tar\.gz') &>/dev/null
-
-    if [ -z "$enlace_descarga" ]; then
-        echo "Error al obtener el enlace de descarga de Tomcat." 
+    if [[ ${#versiones[@]} -ge 2 ]]; then
+        local version_lts="${versiones[0]}"   # Primera coincidencia = LTS
+        local version_dev="${versiones[-1]}"  # Última coincidencia = Desarrollo
+    else
+        echo "No se pudieron obtener las versiones de Tomcat."
         return 1
     fi
 
-    local archivo_tomcat=$(basename "$enlace_descarga") &>/dev/null
-    wget "$enlace_descarga" -O "/tmp/$archivo_tomcat" &>/dev/null
+    case "$opcion_version" in
+        1) version_tomcat="${version_dev}";;
+        2) version_tomcat="${version_lts}";;
+        *) echo "Opción de versión no válida para Tomcat."; return 1;;
+    esac
+
+    # Extraer el número mayor de la versión (ejemplo: "11" de "11.0.14")
+    local bercion=$(echo "$version_tomcat" | cut -d'.' -f1)
+    
+    # Construir el enlace de descarga basado en la versión obtenida
+    local enlace_descarga="https://dlcdn.apache.org/tomcat/tomcat-${bercion}/v${version_tomcat}/bin/apache-tomcat-${version_tomcat}.tar.gz"
+
+    echo ""
+    echo "=== Instalando TOMCAT ${version_tomcat} en puerto ${puerto} ==="
+    echo "Descargando Tomcat desde: ${enlace_descarga}"
+
+    # Descargar Tomcat
+    local archivo_tomcat="/tmp/apache-tomcat-${version_tomcat}.tar.gz"
+    wget "$enlace_descarga" -O "$archivo_tomcat" &>/dev/null
+
+    if [ ! -f "$archivo_tomcat" ]; then
+        echo "Error al descargar Tomcat."
+        return 1
+    fi
 
     # Crear directorio de instalación
-    sudo mkdir /opt/tomcat &>/dev/null
-    sudo tar -xzf "/tmp/$archivo_tomcat" -C /opt/tomcat --strip-components=1 &>/dev/null
-    rm "/tmp/$archivo_tomcat" &>/dev/null
+    sudo mkdir -p /opt/tomcat &>/dev/null
+    sudo tar -xzf "$archivo_tomcat" -C /opt/tomcat --strip-components=1 &>/dev/null
+    rm "$archivo_tomcat" &>/dev/null
 
-    sudo sed -i "s/<Connector port=\"8080\"/<Connector port=\"${puerto}\"/" /opt/tomcat/conf/server.xml &>/dev/null
+    # Configurar puerto en server.xml
+    sudo sed -i "s/port=\"8080\"/port=\"${puerto}\"/" /opt/tomcat/conf/server.xml &>/dev/null
 
-    sudo bash -c 'cat <<EOF > /etc/systemd/system/tomcat.service
+    # Crear servicio systemd para Tomcat
+    sudo bash -c "cat > /etc/systemd/system/tomcat.service" <<EOF
 [Unit]
 Description=Apache Tomcat Web Application Server
 After=network.target
@@ -287,18 +296,18 @@ Group=root
 
 [Install]
 WantedBy=multi-user.target
-EOF' &>/dev/null
-    sudo mv /tmp/tomcat.service /etc/systemd/system/tomcat.service &>/dev/null
+EOF
+
+    # Recargar y habilitar el servicio
     sudo systemctl daemon-reload &>/dev/null
     sudo systemctl enable tomcat &>/dev/null
     sudo systemctl start tomcat &>/dev/null
     sudo systemctl restart tomcat &>/dev/null
 
-
     echo "Tomcat ${version_tomcat} instalado y configurado en el puerto ${puerto}."
-    echo "Instalación de TOMCAT ${version_tomcat} finalizada."
     echo "======================================="
 }
+
 
 instalar_ols() {
     local opcion_version="$1" # Recibe opcion de version (1 o 2)
