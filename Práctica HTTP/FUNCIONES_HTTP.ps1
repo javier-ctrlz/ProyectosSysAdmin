@@ -1,29 +1,37 @@
-Ôªø# Script para funciones de gesti√≥n de instalaci√≥n de servicios HTTP en Windows Server
-# Zapien Rivera Jes√∫s Javier
+# Script para funciones de gestiÛn de instalaciÛn de servicios HTTP en Windows Server
+# Zapien Rivera Jes˙s Javier
 # 302 IS
 
-# --- Funciones de Validaci√≥n y Comprobaci√≥n de Puertos ---
+# --- Funciones de ValidaciÛn y ComprobaciÛn de Puertos ---
 
 function Validate-Port {
     param(
         [string]$Port
     )
+
+    $unsafePorts = @(1, 7, 9, 11, 13, 17, 19, 20, 21, 22, 23, 25, 37, 42, 53, 69, 77, 79, 87, 95, 101, 102, 103, 104, 109, 110, 111, 113, 115, 117, 119, 123, 135, 137, 138, 139, 143, 161, 162, 171, 179, 194, 389, 427, 465, 512, 513, 514, 515, 526, 530, 531, 532, 540, 548, 554, 556, 563, 587, 601, 636, 993, 995, 2049, 3659, 4045, 6000, 6001, 6002, 6003, 6004, 6005, 6006, 6007, 6008, 6009, 6010, 6011, 6012, 6013, 6014, 6015, 6016, 6017, 6018, 6019, 6020, 6021, 6022, 6023, 6024, 6025, 6026, 6027, 6028, 6029, 6030, 6031, 6032, 6033, 6034, 6035, 6036, 6037, 6038, 6039, 6040, 6041, 6042, 6043, 6044, 6045, 6046, 6047, 6048, 6049, 6050, 6051, 6052, 6053, 6054, 6055, 6056, 6057, 6058, 6059, 6060, 6061, 6062, 6063, 6665, 6666, 6667, 6668, 6669)
+
     if ($Port -notmatch '^\d+$') {
-        Write-Warning "Error: Introduzca un n√∫mero v√°lido para el puerto."
+        Write-Warning "Error: Introduzca un n˙mero v·lido para el puerto."
         return $false
     }
     if ([int]$Port -lt 1 -or [int]$Port -gt 65535) {
         Write-Warning "Error: El puerto debe estar entre 1 y 65535."
         return $false
     }
+    if ($unsafePorts -contains [int]$Port) {
+        Write-Warning "Error: El puerto $Port est· bloqueado por seguridad en navegadores. Elija otro."
+        return $false
+    }
     return $true
 }
+
 
 function Test-PortInUse {
     param(
         [int]$Port
     )
-    # Utiliza Get-NetTCPConnection para verificar si el puerto est√° en uso
+    # Utiliza Get-NetTCPConnection para verificar si el puerto est· en uso
     $inUse = Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue
     if ($inUse) { return $true }
     return $false
@@ -32,20 +40,20 @@ function Test-PortInUse {
 # --- Funciones para Obtener Versiones y Enlaces de Descarga ---
 
 function Get-NginxVersions {
-    Write-Host "Consultando p√°gina de descargas de NGINX..."
+    Write-Host "Consultando p·gina de descargas de NGINX..."
     try {
         $response = Invoke-WebRequest -Uri "https://nginx.org/en/download.html" -UseBasicParsing
     }
     catch {
-        Write-Warning "No se pudo acceder a la p√°gina de NGINX."
+        Write-Warning "No se pudo acceder a la p·gina de NGINX."
         return @{ dev = "desconocido"; lts = "desconocido" }
     }
     $content = $response.Content
 
-    # Extraer la versi√≥n de desarrollo (Mainline)
+    # Extraer la versiÛn de desarrollo (Mainline)
     $mainlineRegex = 'Mainline version.*?nginx-([\d\.]+)\.tar\.gz'
     $mainlineMatch = [regex]::Match($content, $mainlineRegex)
-    # Extraer la versi√≥n estable (LTS)
+    # Extraer la versiÛn estable (LTS)
     $stableRegex = 'Stable version.*?nginx-([\d\.]+)\.tar\.gz'
     $stableMatch = [regex]::Match($content, $stableRegex)
 
@@ -53,11 +61,11 @@ function Get-NginxVersions {
        $nginxDevVersion = $mainlineMatch.Groups[1].Value
        $nginxLTSVersion = $stableMatch.Groups[1].Value
     } else {
-       Write-Warning "No se pudieron obtener las versiones de NGINX de la p√°gina de descargas."
+       Write-Warning "No se pudieron obtener las versiones de NGINX de la p·gina de descargas."
        $nginxDevVersion = "desconocido"
        $nginxLTSVersion = "desconocido"
     }
-    Write-Host "NGINX - Opciones de Versi√≥n:"
+    Write-Host "NGINX - Opciones de VersiÛn:"
     Write-Host "1. Desarrollo: $nginxDevVersion"
     Write-Host "2. LTS: $nginxLTSVersion"
     Write-Host "3. Cancelar"
@@ -69,7 +77,7 @@ function Get-TomcatVersions {
         $response = Invoke-WebRequest -Uri "https://tomcat.apache.org/index.html" -UseBasicParsing
     }
     catch {
-        Write-Warning "No se pudo acceder a la p√°gina de Tomcat."
+        Write-Warning "No se pudo acceder a la p·gina de Tomcat."
         return @{ dev = "desconocido"; lts = "desconocido" }
     }
     
@@ -78,18 +86,18 @@ function Get-TomcatVersions {
     $matches = [regex]::Matches($content, $regex)
     
     if ($matches.Count -ge 2) {
-        # La primera coincidencia es la versi√≥n LTS (estable)
+        # La primera coincidencia es la versiÛn LTS (estable)
         $tomcatLTSVersion = $matches[0].Value
-        # La √∫ltima coincidencia es la versi√≥n de desarrollo
+        # La ˙ltima coincidencia es la versiÛn de desarrollo
         $tomcatDevVersion = $matches[$matches.Count - 1].Value
     }
     else {
-        Write-Warning "No se pudieron obtener las versiones de Tomcat de la p√°gina."
+        Write-Warning "No se pudieron obtener las versiones de Tomcat de la p·gina."
         $tomcatLTSVersion = "desconocido"
         $tomcatDevVersion = "desconocido"
     }
     
-    Write-Host "Tomcat - Opciones de Versi√≥n:"
+    Write-Host "Tomcat - Opciones de VersiÛn:"
     Write-Host "1. Desarrollo: Tomcat $tomcatDevVersion"
     Write-Host "2. LTS (Estable): Tomcat $tomcatLTSVersion"
     Write-Host "3. Cancelar"
@@ -98,18 +106,19 @@ function Get-TomcatVersions {
 }
 
 
+
 function Get-IISVersions {
     # Para IIS usaremos versiones predefinidas
     $iisDevVersion = "10.0 Preview"
     $iisLTSVersion = "10.0"
-    Write-Host "IIS - Opciones de Versi√≥n:"
+    Write-Host "IIS - Opciones de VersiÛn:"
     Write-Host "1. Desarrollo (Preview): $iisDevVersion"
     Write-Host "2. LTS (Estable): $iisLTSVersion"
     Write-Host "3. Cancelar"
     return @{ dev = $iisDevVersion; lts = $iisLTSVersion }
 }
 
-# --- Funciones de Instalaci√≥n/Configuraci√≥n de Servicios ---
+# --- Funciones de InstalaciÛn/ConfiguraciÛn de Servicios ---
 
 function Install-Nginx {
     param(
@@ -117,7 +126,13 @@ function Install-Nginx {
         [string]$VersionOption,  
         [hashtable]$Versions
     )
-
+    
+    if(Get-Process -Name nginx){
+        Stop-Process -Name nginx -Force
+    }
+    
+    sc.exe delete nginx -SilentlyContinue
+    
     if ($VersionOption -eq "1") {
         $selectedVersion = $Versions.dev
         $versionType = "Desarrollo (Mainline)"
@@ -127,42 +142,31 @@ function Install-Nginx {
         $versionType = "LTS (Estable)"
     }
     else {
-        Write-Warning "Opci√≥n de versi√≥n no v√°lida para NGINX."
+        Write-Warning "OpciÛn de versiÛn no v·lida para NGINX."
         return
     }
 
     $downloadLink = "https://nginx.org/download/nginx-$selectedVersion.zip"
-    Write-Host "`n=== Instalando NGINX $versionType, Versi√≥n $selectedVersion en el puerto $Port ==="
+    Write-Host "`n=== Instalando NGINX $versionType, VersiÛn $selectedVersion en el puerto $Port ==="
     Write-Host "Descargando NGINX desde: $downloadLink"
 
     $nginxZip = "C:\nginx-$selectedVersion.zip"
-    $nginxPath = "C:\nginx"
 
     # Descargar NGINX
     Invoke-WebRequest -Uri $downloadLink -OutFile $nginxZip
 
-    # Verificar si la carpeta nginx ya existe y eliminarla
-    if (Test-Path $nginxPath) {
-        Remove-Item -Recurse -Force $nginxPath
-    }
+    Expand-Archive -Path $nginxZip -DestinationPath "C:\nginx" -Force
 
-    Expand-Archive -Path $nginxZip -DestinationPath "C:\" -Force
-    Rename-Item -Path "C:\nginx-$selectedVersion" -NewName "nginx"
+    cd C:\nginx\nginx-$selectedVersion
 
-    $configFile = "$nginxPath\conf\nginx.conf"
+    $configFile = "C:\nginx\nginx-$selectedVersion\conf\nginx.conf"
 
     # Modificar el puerto en nginx.conf
     (Get-Content $configFile) -replace "listen\s+80;", "listen $Port;" | Set-Content $configFile
-    
-    # Verificar si el servicio ya existe antes de crearlo
-    if (Get-Service -Name "nginx" -ErrorAction SilentlyContinue) {
-        Write-Host "El servicio NGINX ya existe. No es necesario crearlo."
-    } else {
-        sc.exe create nginx binPath= "$nginxPath\nginx.exe" start= auto
-    }
 
-    Start-Process C:\nginx\nginx.exe
+    Start-Process "C:\nginx\nginx-$selectedVersion\nginx.exe"
     Get-Process -Name nginx
+    cd C:\Users\Administrador
 }
 
 
@@ -182,47 +186,44 @@ function Install-Tomcat {
         $versionType = "LTS (Estable)"
     }
     else {
-        Write-Warning "Opci√≥n de versi√≥n no v√°lida para Tomcat."
+        Write-Warning "OpciÛn de versiÛn no v·lida para Tomcat."
         return
     }
 
     $bercion = $selectedVersion.Split('.')[0]
+
+    if(Get-Process -Name tomcat$bercion){
+        Stop-Process -Name tomcat$bercion -Force
+    }
     
+    sc.exe delete tomcat$bercion -SilentlyContinue
+
     $downloadLink = "https://dlcdn.apache.org/tomcat/tomcat-$bercion/v$selectedVersion/bin/apache-tomcat-$selectedVersion-windows-x64.zip"
     $tomcatZip = "C:\tomcat-$selectedVersion.zip"
-    $tomcatPath = "C:\tomcat"
 
-    Write-Host "`n=== Instalando Tomcat $versionType, Versi√≥n $selectedVersion en el puerto $Port ==="
+    Write-Host "`n=== Instalando Tomcat $versionType, VersiÛn $selectedVersion en el puerto $Port ==="
     Write-Host "Descargando Tomcat desde: $downloadLink"
 
     # Descargar Tomcat
     Invoke-WebRequest -Uri $downloadLink -OutFile $tomcatZip
 
-    # Verificar si la carpeta Tomcat ya existe y eliminarla
-    if (Test-Path $tomcatPath) {
-        Remove-Item -Recurse -Force $tomcatPath
-    }
-
-    Expand-Archive -Path $tomcatZip -DestinationPath "C:\" -Force
-    Rename-Item -Path "C:\apache-tomcat-$selectedVersion" -NewName "tomcat"
+    Expand-Archive -Path $tomcatZip -DestinationPath "C:\tomcat" -Force
 
     # Configurar puerto en server.xml
-    $configFile = "$tomcatPath\conf\server.xml"
-    if (Test-Path $configFile) {
-        (Get-Content $configFile) -replace 'port="8080"', "port=`"$Port`"" | Set-Content $configFile
-    } else {
-        Write-Warning "No se encontr√≥ el archivo server.xml. La configuraci√≥n del puerto no se aplic√≥."
-    }
-   
+    $configFile = "C:\tomcat\apache-tomcat-$selectedVersion\conf\server.xml"
 
-    # Verificar si el servicio se cre√≥ correctamente
-    $service = Get-Service | Where-Object { $_.Name -match "Tomcat" }
-
-    if ($service) {
-        Start-Process -FilePath "$tomcatPath\bin\startup.bat" -NoNewWindow -Wait
-    }
-
+    (Get-Content $configFile) -replace 'port="8080"', "port=`"$Port`"" | Set-Content $configFile
+    
+    cd C:\tomcat\apache-tomcat-$selectedVersion\bin\
+        
+    #Start-Process "C:\tomcat\apache-tomcat-$selectedVersion\bin\startup.bat"
+    
+    
+    .\service.bat install tomcat$bercion
+    Start-Service -Name tomcat$bercion
+    Get-Process -Name tomcat$bercion
     Write-Host "Tomcat $versionType instalado y configurado exitosamente en el puerto $Port." -ForegroundColor Green
+    cd C:\Users\Administrador
 }
 
 
@@ -232,7 +233,7 @@ function Install-IIS {
         [string]$VersionOption,  # "1" para Desarrollo, "2" para LTS
         [hashtable]$Versions
     )
-
+    
     if ($VersionOption -eq "1") {
         $selectedVersion = $Versions.dev
         $versionType = "Desarrollo (Preview)"
@@ -242,29 +243,59 @@ function Install-IIS {
         $versionType = "LTS (Estable)"
     }
     else {
-        Write-Warning "Opci√≥n de versi√≥n no v√°lida para IIS."
+        Write-Warning "OpciÛn de versiÛn no v·lida para IIS."
         return
     }
+    
     Write-Host ""
-    Write-Host "=== Configurando IIS $versionType, Versi√≥n $selectedVersion para usar el puerto $Port ==="
-    Write-Host "Configurando sitio web predeterminado de IIS..."
+    Write-Host "=== Configurando IIS $versionType, VersiÛn $selectedVersion para usar el puerto $Port ==="
+    Write-Host "Actualizando puerto HTTP del sitio 'Default Web Site'..."
     Import-Module WebAdministration
+
     try {
-        $site = Get-Website -Name "Default Web Site"
-        if ($site) {
-            # Ejemplo: se modifica la vinculaci√≥n para cambiar el puerto
-            Set-WebBinding -Name "Default Web Site" -BindingInformation "*:80:" -PropertyName port -Value $Port
+        $site = Get-Website -Name "Default Web Site" -ErrorAction SilentlyContinue
+        if (-not $site) {
+            Write-Warning "No se encontrÛ el sitio 'Default Web Site'."
+            return
+        }
+
+        # Filtrar ˙nicamente las vinculaciones HTTP
+        $httpBindings = Get-WebBinding -Name "Default Web Site" | Where-Object { $_.protocol -eq "http" }
+
+        if ($httpBindings -and $httpBindings.Count -gt 0) {
+            foreach ($binding in $httpBindings) {
+                # El formato es "IP:Puerto:HostHeader"
+                $parts = $binding.bindingInformation.Split(":")
+                if ($parts.Length -ge 3) {
+                    $ip = $parts[0]
+                    $oldPort = $parts[1]
+                    $hostHeader = $parts[2]
+                    # Eliminar la vinculaciÛn existente
+                    Remove-WebBinding -Name "Default Web Site" -Protocol "http" -IPAddress $ip -Port $oldPort -HostHeader $hostHeader -Confirm:$false
+                    # Crear una nueva vinculaciÛn con el puerto actualizado
+                    New-WebBinding -Name "Default Web Site" -Protocol "http" -IPAddress $ip -Port $Port -HostHeader $hostHeader -ErrorAction Stop
+                    Write-Host "Se actualizÛ la vinculaciÛn HTTP de '$($ip):$($oldPort):$($hostHeader)' a '$($ip):$($Port):$($hostHeader)'." -ForegroundColor Green
+                }
+            }
         }
         else {
-            Write-Warning "No se encontr√≥ el sitio 'Default Web Site'."
+            Write-Warning "No se encontrÛ ninguna vinculaciÛn HTTP en 'Default Web Site'. Creando una nueva vinculaciÛn..."
+            New-WebBinding -Name "Default Web Site" -Protocol "http" -IPAddress "*" -Port $Port -HostHeader "" -ErrorAction Stop
+            Write-Host "Nueva vinculaciÛn HTTP creada: *:${Port}:" -ForegroundColor Green
         }
     }
     catch {
-        Write-Error "Error al configurar IIS: $_"
+        Write-Error "Error al actualizar el puerto HTTP de 'Default Web Site': $_"
     }
 }
 
-# --- Funci√≥n Gen√©rica para la Instalaci√≥n/Configuraci√≥n de un Servicio HTTP ---
+
+
+
+
+
+
+# --- FunciÛn GenÈrica para la InstalaciÛn/ConfiguraciÛn de un Servicio HTTP ---
 
 function Install-HTTPService {
     param(
@@ -275,9 +306,9 @@ function Install-HTTPService {
         "nginx" {
             $versions = Get-NginxVersions
             do {
-                $versionOption = Read-Host "Seleccione la versi√≥n de NGINX a instalar (1-Desarrollo, 2-LTS, 3-Cancelar)"
+                $versionOption = Read-Host "Seleccione la versiÛn de NGINX a instalar (1-Desarrollo, 2-LTS, 3-Cancelar)"
                 if ($versionOption -eq "3") {
-                    Write-Host "Instalaci√≥n de NGINX cancelada."
+                    Write-Host "InstalaciÛn de NGINX cancelada."
                     return
                 }
             } until ($versionOption -eq "1" -or $versionOption -eq "2")
@@ -285,9 +316,9 @@ function Install-HTTPService {
         "tomcat" {
             $versions = Get-TomcatVersions
             do {
-                $versionOption = Read-Host "Seleccione la versi√≥n de Tomcat a instalar (1-Desarrollo, 2-LTS, 3-Cancelar)"
+                $versionOption = Read-Host "Seleccione la versiÛn de Tomcat a instalar (1-Desarrollo, 2-LTS, 3-Cancelar)"
                 if ($versionOption -eq "3") {
-                    Write-Host "Instalaci√≥n de Tomcat cancelada."
+                    Write-Host "InstalaciÛn de Tomcat cancelada."
                     return
                 }
             } until ($versionOption -eq "1" -or $versionOption -eq "2")
@@ -295,9 +326,9 @@ function Install-HTTPService {
         "iis" {
             $versions = Get-IISVersions
             do {
-                $versionOption = Read-Host "Seleccione la versi√≥n de IIS a configurar (1-Desarrollo, 2-LTS, 3-Cancelar)"
+                $versionOption = Read-Host "Seleccione la versiÛn de IIS a configurar (1-Desarrollo, 2-LTS, 3-Cancelar)"
                 if ($versionOption -eq "3") {
-                    Write-Host "Configuraci√≥n de IIS cancelada."
+                    Write-Host "ConfiguraciÛn de IIS cancelada."
                     return
                 }
             } until ($versionOption -eq "1" -or $versionOption -eq "2")
@@ -312,9 +343,11 @@ function Install-HTTPService {
     do {
         $portInput = Read-Host "Ingrese el puerto para $Service"
     } until (Validate-Port $portInput)
+    
     $portNumber = [int]$portInput
-    if (Test-PortInUse -Port $port) {
-        Write-Warning "El puerto $portInput est√° en uso. Por favor, elija otro puerto."
+    
+    if (Test-PortInUse -Port $portNumber) {
+        Write-Warning "El puerto $portInput est· en uso. Por favor, elija otro puerto."
         return
     }
 
