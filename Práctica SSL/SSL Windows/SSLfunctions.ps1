@@ -84,12 +84,12 @@ function ConfigsslNginx {
     $cert = Get-Item "Cert:\LocalMachine\My\E99189813BB80D71022255874F3BD71115C4E0C0"
     
     # Exportar el certificado en formato PFX y CRT para Nginx
-    Export-PfxCertificate -Cert $cert -FilePath "C:\nginx\certificado.pfx" -Password (ConvertTo-SecureString -String "Rubo2004" -Force -AsPlainText)
+    Export-PfxCertificate -Cert $cert -FilePath "C:\nginx\certificado.pfx" -Password (ConvertTo-SecureString -String "Javeir1234!" -Force -AsPlainText)
     Export-Certificate -Cert $cert -FilePath "C:\nginx\certificado.crt"
     
     # Crear los archivos de clave y certificado en formato PEM y KEY usando OpenSSL
-    openssl pkcs12 -in C:\nginx\certificado.pfx -clcerts -nokeys -out C:\nginx\clave.pem -passin pass:Rubo2004
-    openssl pkcs12 -in C:\nginx\certificado.pfx -nocerts -nodes -out C:\nginx\clave.key -passin pass:Rubo2004
+    openssl pkcs12 -in C:\nginx\certificado.pfx -clcerts -nokeys -out C:\nginx\clave.pem -passin pass:Javier1234!
+    openssl pkcs12 -in C:\nginx\certificado.pfx -nocerts -nodes -out C:\nginx\clave.key -passin pass:Javier1234!
 
     # Solicitar un puerto válido para HTTPS
     $running = $true
