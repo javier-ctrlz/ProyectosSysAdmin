@@ -1,4 +1,7 @@
-﻿function Configurarini($lines, $section, $key, $value){
+﻿# smtpfunctions.ps1
+# Script que contiene las funciones que se usan para la configuración del servidor
+
+function Configurarini($lines, $section, $key, $value){
 
     #Esto confugrua el archivo de configuracion, si alguien pregunra ehm... un hechicero lo hizo
     $sectionIndex = $lines.IndexOf("[$section]")

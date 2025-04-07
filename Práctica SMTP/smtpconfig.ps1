@@ -1,4 +1,8 @@
-﻿#Ruta donde guardas los scripts
+﻿# Script para configurar un servidor de correo
+# Zapien Rivera Jesús Javier
+# 302 IS
+
+#Ruta donde guardas los scripts
 . "$PSScriptRoot\smtpfunctions.ps1"
 
 
