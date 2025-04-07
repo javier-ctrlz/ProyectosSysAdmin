@@ -47,7 +47,7 @@ function instalarsquirrel{
 
     #Renombramos y editamos el archivo de configuracion
     Rename-Item -Path C:\xampp\htdocs\squirrelmail\config\config_default.php -NewName "config.php"            #Aqui el dominio que se configuro en la instalacion
-    (Get-Content "C:\xampp\htdocs\squirrelmail\config\config.php") -replace '\$domain\s*=\s*''[^'']+'';', '$domain = ''adad.com'';' | Set-Content "C:\xampp\htdocs\squirrelmail\config\config.php"
+    (Get-Content "C:\xampp\htdocs\squirrelmail\config\config.php") -replace '\$domain\s*=\s*''[^'']+'';', '$domain = ''correoprueba.com'';' | Set-Content "C:\xampp\htdocs\squirrelmail\config\config.php"
     (Get-Content "C:\xampp\htdocs\squirrelmail\config\config.php") -replace '\$data_dir\s*=\s*''[^'']+'';', '$data_dir = ''C:/xampp/htdocs/squirrelmail/data/'';' | Set-Content "C:\xampp\htdocs\squirrelmail\config\config.php"
 
     
