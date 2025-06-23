@@ -4,7 +4,6 @@
 # En esta configuración, el directorio raíz para los usuarios es /srv/ftp/LocalUser/Public,
 # donde se crearán las carpetas de servicios: nginx, tomcat y lighttpd.
 #
-# Autor: [Tu Nombre]
 
 # --- Función de Validación ---
 validate_username() {
